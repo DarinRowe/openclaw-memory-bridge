@@ -1,53 +1,65 @@
 # openclaw-memory-bridge
 
-Bridges file-based memory into OpenClaw agent context.
+Bridges file-based memory into OpenClaw agent context. No config needed — install and go.
 
-## Overview
+## How It Works
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     OpenClaw Gateway                         │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              memory-bridge Plugin                    │   │
-│  │                                                      │   │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────┐  │   │
-│  │  │ before_prompt│  │ command:new  │  │agent_end │  │   │
-│  │  │   _build     │  │              │  │          │  │   │
-│  │  └──────┬───────┘  └──────┬───────┘  └────┬─────┘  │   │
-│  │         │                 │                │         │   │
-│  │         ▼                 ▼                ▼         │   │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────┐  │   │
-│  │  │SESSION-STATE │  │ daily log    │  │ daily log│  │   │
-│  │  │   + lessons  │  │   (create)   │  │ (append) │  │   │
-│  │  └──────────────┘  └──────────────┘  └──────────┘  │   │
-│  │                                                      │   │
-│  │  ┌──────────────────────────────────────────────┐  │   │
-│  │  │           Auto Janitor (daily)                │  │   │
-│  │  │  • Cleanup expired MEMORY.md (P1/P2)         │  │   │
-│  │  │  • Rebuild LESSONS.md index                  │  │   │
-│  │  └──────────────────────────────────────────────┘  │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-                           │
-                           ▼
-              ┌────────────────────────┐
-              │  ~/.openclaw/workspace │
-              │  ├── SESSION-STATE.md  │
-              │  ├── LESSONS.md        │
-              │  ├── MEMORY.md         │
-              │  └── memory/           │
-              │      └── YYYY-MM-DD.md │
-              └────────────────────────┘
+  User sends message
+        │
+        ▼
+┌───────────────────┐     ┌──────────────────────────┐
+│ before_prompt_build│────▶│ Read SESSION-STATE.md    │
+│                   │     │ Read LESSONS.md (high/crit)│
+│                   │     │ Inject into agent context  │
+└───────────────────┘     └──────────────────────────┘
+        │
+        ▼
+   Agent runs...
+        │
+        ▼
+┌───────────────────┐     ┌──────────────────────────┐
+│    agent_end      │────▶│ Append run summary to    │
+│                   │     │ memory/YYYY-MM-DD.md     │
+└───────────────────┘     └──────────────────────────┘
+
+  User runs /new
+        │
+        ▼
+┌───────────────────┐     ┌──────────────────────────┐
+│   command:new     │────▶│ Create today's daily log │
+│                   │     │ memory/YYYY-MM-DD.md     │
+└───────────────────┘     └──────────────────────────┘
+
+  Gateway starts / every day 00:15 UTC
+        │
+        ▼
+┌───────────────────┐     ┌──────────────────────────┐
+│   Auto Janitor    │────▶│ Archive expired P1/P2    │
+│                   │     │ from MEMORY.md           │
+│                   │     │ Ensure daily log exists  │
+└───────────────────┘     └──────────────────────────┘
 ```
 
-## What it does
+## File Layout
 
-| Hook | Function |
-|------|----------|
-| `before_prompt_build` | Injects SESSION-STATE.md + high-risk lessons into context |
-| `command:new` | Ensures daily log exists on `/new` |
-| `agent_end` | Appends run summary to daily log |
-| `gateway_start` | Schedules daily janitor (runs after 00:15 UTC) |
+```
+~/.openclaw/workspace/
+├── MEMORY.md              ◀── Curated long-term memory
+│                               P0 = permanent
+│                               P1 = 90-day TTL
+│                               P2 = 30-day TTL
+│
+├── SESSION-STATE.md       ◀── Injected every turn
+│                               Current Focus / Next Step / Blockers
+│
+├── LESSONS.md             ◀── high/critical injected to system prompt
+│                               - [date][severity][category] text
+│
+└── memory/
+    ├── YYYY-MM-DD.md      ◀── Auto-created & appended by plugin
+    └── archive/           ◀── Expired entries moved here by janitor
+```
 
 ## Install
 
@@ -66,6 +78,8 @@ openclaw gateway restart
 
 ## Config (optional)
 
+All features are **on** by default. Turn off what you don't need:
+
 ```json
 {
   "plugins": {
@@ -82,44 +96,29 @@ openclaw gateway restart
 }
 ```
 
-## File Layout
-
-```
-~/.openclaw/workspace/
-├── MEMORY.md              # Curated long-term (P0/P1/P2 with TTL)
-├── SESSION-STATE.md       # Short-term RAM (focus/next/blockers)
-├── LESSONS.md             # Operational lessons
-└── memory/
-    ├── YYYY-MM-DD.md      # Daily logs
-    └── archive/           # Expired entries
-```
-
-### MEMORY.md Format
-
-```markdown
-- [P0] Permanent memory
-- [P1][2026-03-10] 90-day TTL memory
-- [P2][2026-03-10] 30-day TTL memory
-```
-
-### LESSONS.md Format
-
-```markdown
-- [YYYY-MM-DD][severity][category] lesson text
-```
-
-Severity: `critical`, `high`, `medium`, `low`
-
 ## Bundled Scripts
 
-| Script | Usage |
-|--------|-------|
-| `scripts/add_lesson.py` | `python3 add_lesson.py --category <cat> --severity <level> "text"` |
-| `scripts/search_lessons.py` | `python3 search_lessons.py [query] [--category X] [--severity Y]` |
-| `scripts/render_lessons_md.py` | `python3 render_lessons_md.py [--limit N]` |
-| `scripts/update_session_state.py` | `python3 update_session_state.py --focus "text" --next "text"` |
-| `scripts/daily_log.sh` | `bash daily_log.sh` |
-| `scripts/memory_janitor.py` | `python3 memory_janitor.py [--dry-run]` |
+Use standalone or let the plugin call them automatically.
+
+```bash
+# Add a lesson
+python3 scripts/add_lesson.py --category devops --severity high "always backup before upgrade"
+
+# Search lessons
+python3 scripts/search_lessons.py "backup"
+
+# Sort/dedupe lessons
+python3 scripts/render_lessons_md.py
+
+# Update session state
+python3 scripts/update_session_state.py --focus "deploy v2" --next "run tests"
+
+# Create today's log
+bash scripts/daily_log.sh
+
+# Run cleanup manually
+python3 scripts/memory_janitor.py --dry-run
+```
 
 Scripts use `$OPENCLAW_WORKSPACE` (default: `~/.openclaw/workspace`).
 
