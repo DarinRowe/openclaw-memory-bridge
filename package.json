@@ -1,6 +1,6 @@
 {
   "name": "@darinrowe/openclaw-memory-bridge",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Bridges file-based memory (SESSION-STATE, LESSONS) into agent context",
   "main": "index.ts",
   "type": "module",
