@@ -9,23 +9,13 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: https://npm.pkg.github.com
 
-      - name: Show npm config
-        run: |
-          echo "Registry: $(npm config get registry)"
-          cat ~/.npmrc 2>/dev/null || echo "No .npmrc"
-
-      - name: Publish
-        run: |
-          npm config set //npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}
-          npm publish --dry-run 2>&1 || true
-          npm publish 2>&1 || echo "Exit code: $?"
+      - run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
