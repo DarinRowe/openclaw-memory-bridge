@@ -1,1 +1,0 @@
-- [2026-03-10][high][devops] Always store GitHub deploy keys in /root/.ssh/, not in workspace
