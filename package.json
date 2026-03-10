@@ -1,5 +1,5 @@
 {
-  "name": "@darin3333/openclaw-memory-bridge",
+  "name": "@darinrowe/openclaw-memory-bridge",
   "version": "1.0.0",
   "description": "Bridges file-based memory (SESSION-STATE, LESSONS) into agent context",
   "main": "index.ts",
@@ -10,6 +10,9 @@
   },
   "keywords": ["openclaw", "memory", "context", "plugin"],
   "license": "MIT",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "openclaw": {
     "extensions": ["./index.ts"]
   }
