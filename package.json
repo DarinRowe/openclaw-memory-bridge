@@ -10,9 +10,7 @@
   },
   "keywords": ["openclaw", "memory", "context", "plugin"],
   "license": "MIT",
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
+
   "openclaw": {
     "extensions": ["./index.ts"]
   }
