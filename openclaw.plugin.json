@@ -1,0 +1,31 @@
+{
+  "id": "memory-bridge",
+  "name": "Memory Bridge",
+  "description": "Bridges file-based memory (SESSION-STATE, LESSONS) into agent context. Injects session state before prompts, appends to daily logs after runs.",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "enabled": {
+        "type": "boolean",
+        "default": true
+      },
+      "injectSessionState": {
+        "type": "boolean",
+        "default": true,
+        "description": "Inject SESSION-STATE.md before prompt build"
+      },
+      "injectHighRiskLessons": {
+        "type": "boolean",
+        "default": true,
+        "description": "Inject high-severity lessons before prompt build"
+      },
+      "autoDailyLog": {
+        "type": "boolean",
+        "default": true,
+        "description": "Append agent run results to daily log"
+      }
+    }
+  },
+  "version": "1.0.0"
+}

@@ -1,0 +1,16 @@
+{
+  "name": "@darin3333/openclaw-memory-bridge",
+  "version": "1.0.0",
+  "description": "Bridges file-based memory (SESSION-STATE, LESSONS) into agent context",
+  "main": "index.ts",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DarinRowe/openclaw-memory-bridge"
+  },
+  "keywords": ["openclaw", "memory", "context", "plugin"],
+  "license": "MIT",
+  "openclaw": {
+    "extensions": ["./index.ts"]
+  }
+}
