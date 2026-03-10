@@ -4,7 +4,8 @@
  * Bridges file-based memory into agent context:
  * - before_prompt_build: inject SESSION-STATE.md + high-risk lessons
  * - command:new: ensure daily log exists
- * - agent_end: append to daily log + suggest promote/lesson candidates
+ * - agent_end: append to daily log
+ * - gateway_start: schedule daily janitor
  */
 import { readFileSync, existsSync, appendFileSync, writeFileSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
@@ -22,6 +23,10 @@ function resolvePath(workspace: string, file: string): string {
   const home = process.env.HOME || process.env.USERPROFILE || "~";
   const ws = workspace.replace(/^~/, home);
   return join(ws, file);
+}
+
+function getPluginDir(): string {
+  return dirname(new URL(import.meta.url).pathname);
 }
 
 function readMarkdown(path: string): string | null {
@@ -106,15 +111,58 @@ function appendToDailyLog(workspace: string, entry: string): void {
   appendFileSync(logPath, chunk);
 }
 
+function runJanitor(workspace: string): void {
+  const pluginDir = getPluginDir();
+  const janitorPath = join(pluginDir, "scripts", "memory_janitor.py");
+  
+  if (!existsSync(janitorPath)) return;
+  
+  const result = spawnSync("python3", [janitorPath], {
+    env: { ...process.env, OPENCLAW_WORKSPACE: workspace },
+    timeout: 30000,
+  });
+  
+  if (result.status !== 0) {
+    console.error(`[memory-bridge] janitor failed: ${result.stderr?.toString()}`);
+  }
+}
+
 export default function register(api: any) {
   const cfg = api.config || {};
+  const workspace = getWorkspace(cfg);
   
-  // Hook: before_prompt_build - inject session state + lessons
+  // --- Scheduled janitor (daily at 00:15 UTC) ---
+  let janitorTimer: ReturnType<typeof setInterval> | null = null;
+  let lastJanitorDate = "";
+  
+  function maybeRunJanitor() {
+    const today = new Date().toISOString().split("T")[0];
+    if (today === lastJanitorDate) return;
+    
+    const hour = new Date().getUTCHours();
+    const minute = new Date().getUTCMinutes();
+    
+    // Run once per day after 00:15 UTC
+    if (hour === 0 && minute >= 15) {
+      lastJanitorDate = today;
+      try {
+        runJanitor(workspace);
+      } catch (e) {
+        console.error("[memory-bridge] janitor error:", e);
+      }
+    }
+  }
+  
+  // Check every 10 minutes
+  janitorTimer = setInterval(maybeRunJanitor, 10 * 60 * 1000);
+  
+  // Also run on startup (if past 00:15)
+  maybeRunJanitor();
+  
+  // --- Hook: before_prompt_build ---
   api.on("before_prompt_build", (event: any, ctx: any) => {
-    const workspace = getWorkspace(cfg);
     const results: Record<string, string> = {};
     
-    // Inject SESSION-STATE.md
     if (cfg.injectSessionState !== false) {
       const statePath = resolvePath(workspace, SESSION_STATE);
       const stateContent = readMarkdown(statePath);
@@ -123,26 +171,25 @@ export default function register(api: any) {
         let summary = "\n## Current Session State\n";
         
         if (sections["Current Focus"]) {
-          summary += "\n**Current Focus:**\n" + sections["Current Focus"].map(l => "  " + l).join("\n");
+          summary += "\n**Current Focus:**\n" + sections["Current Focus"].map((l: string) => "  " + l).join("\n");
         }
         if (sections["Next Step"]) {
-          summary += "\n**Next Step:**\n" + sections["Next Step"].map(l => "  " + l).join("\n");
+          summary += "\n**Next Step:**\n" + sections["Next Step"].map((l: string) => "  " + l).join("\n");
         }
         if (sections["Blockers"]) {
-          summary += "\n**Blockers:**\n" + sections["Blockers"].map(l => "  " + l).join("\n");
+          summary += "\n**Blockers:**\n" + sections["Blockers"].map((l: string) => "  " + l).join("\n");
         }
         
         results.prependContext = summary;
       }
     }
     
-    // Inject high-risk lessons
     if (cfg.injectHighRiskLessons !== false) {
       const lessonsPath = resolvePath(workspace, LESSONS);
       const lessons = getHighRiskLessons(lessonsPath);
       if (lessons.length > 0) {
         const lessonBlock = "\n## High-Risk Operational Lessons\n" + 
-          lessons.map(l => "  " + l).join("\n");
+          lessons.map((l: string) => "  " + l).join("\n");
         results.appendSystemContext = lessonBlock;
       }
     }
@@ -150,11 +197,10 @@ export default function register(api: any) {
     return Object.keys(results).length > 0 ? results : undefined;
   }, { priority: 50 });
   
-  // Hook: command:new - ensure daily log exists
+  // --- Hook: command:new ---
   api.registerHook(
     "command:new",
     async (ctx: any) => {
-      const workspace = getWorkspace(cfg);
       ensureDailyLog(workspace);
       return { handled: true };
     },
@@ -164,15 +210,13 @@ export default function register(api: any) {
     },
   );
   
-  // Hook: agent_end - append run summary to daily log
+  // --- Hook: agent_end ---
   api.on("agent_end", (event: any, ctx: any) => {
     if (cfg.autoDailyLog === false) return;
     
-    const workspace = getWorkspace(cfg);
     const run = event.run || {};
     const messages = event.messages || [];
     
-    // Get last assistant message for summary
     const lastAssistant = messages.filter((m: any) => m.role === "assistant").slice(-1)[0];
     const toolCalls = (lastAssistant?.tool_calls || []).length;
     const hadError = run.status === "error";
