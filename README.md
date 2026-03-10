@@ -12,25 +12,12 @@ Bridges file-based memory into OpenClaw agent context.
 
 ## Install
 
-### Option 1: npm (recommended for npmjs.com packages)
-
 ```bash
 openclaw plugins install @darinrowe/openclaw-memory-bridge
 openclaw gateway restart
 ```
 
-### Option 2: GitHub Packages
-
-```bash
-# Configure registry
-npm config set registry https://npm.pkg.github.com
-
-# Install
-openclaw plugins install @darinrowe/openclaw-memory-bridge
-openclaw gateway restart
-```
-
-### Option 3: Link locally
+Or link locally:
 
 ```bash
 git clone https://github.com/DarinRowe/openclaw-memory-bridge
