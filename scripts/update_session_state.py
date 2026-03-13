@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List
@@ -14,6 +15,9 @@ def utc_now() -> str:
 
 
 def workspace_root() -> Path:
+    raw = os.environ.get("OPENCLAW_WORKSPACE")
+    if raw:
+        return Path(raw).expanduser()
     return Path(__file__).resolve().parent.parent
 
 

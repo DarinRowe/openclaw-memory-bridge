@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Add a new lesson to LESSONS.md"""
 import argparse
-import re
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -9,6 +9,9 @@ SEVERITIES = {"low", "medium", "high", "critical"}
 
 
 def workspace_root() -> Path:
+    raw = os.environ.get("OPENCLAW_WORKSPACE")
+    if raw:
+        return Path(raw).expanduser()
     return Path(__file__).resolve().parent.parent
 
 

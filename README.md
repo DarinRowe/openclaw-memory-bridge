@@ -88,7 +88,10 @@ All features are **on** by default. Turn off what you don't need:
         "config": {
           "injectSessionState": true,
           "injectHighRiskLessons": true,
-          "autoDailyLog": true
+          "autoDailyLog": true,
+          "maxSessionStateChars": 4000,
+          "maxHighRiskLessons": 5,
+          "maxLessonChars": 1200
         }
       }
     }

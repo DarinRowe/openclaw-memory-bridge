@@ -7,6 +7,7 @@ import subprocess
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import List, Tuple
+import os
 
 ENTRY_RE = re.compile(r"^- \[(P[012])\](?:\[(\d{4}-\d{2}-\d{2})\])?\s+(.*)$")
 TTL_DAYS = {"P1": 90, "P2": 30}
@@ -17,6 +18,9 @@ class ArchiveItem(Tuple[str, str]):
 
 
 def workspace_root() -> Path:
+    raw = os.environ.get("OPENCLAW_WORKSPACE")
+    if raw:
+        return Path(raw).expanduser()
     return Path(__file__).resolve().parent.parent
 
 

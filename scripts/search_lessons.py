@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """Search LESSONS.md by keyword, category, or severity."""
 import argparse
+import os
 import re
 from pathlib import Path
 
 
 def workspace_root() -> Path:
+    raw = os.environ.get("OPENCLAW_WORKSPACE")
+    if raw:
+        return Path(raw).expanduser()
     return Path(__file__).resolve().parent.parent
 
 

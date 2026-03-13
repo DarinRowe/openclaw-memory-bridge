@@ -24,6 +24,28 @@
         "type": "boolean",
         "default": true,
         "description": "Append agent run results to daily log"
+      },
+      "workspace": {
+        "type": "string",
+        "description": "Override OpenClaw workspace path"
+      },
+      "maxSessionStateChars": {
+        "type": "integer",
+        "default": 4000,
+        "minimum": 1,
+        "description": "Maximum SESSION-STATE.md characters injected per turn"
+      },
+      "maxHighRiskLessons": {
+        "type": "integer",
+        "default": 5,
+        "minimum": 1,
+        "description": "Maximum number of high-risk lessons to inject"
+      },
+      "maxLessonChars": {
+        "type": "integer",
+        "default": 1200,
+        "minimum": 1,
+        "description": "Maximum lesson block characters injected per turn"
       }
     }
   },

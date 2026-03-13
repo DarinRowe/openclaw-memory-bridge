@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """Sort/refresh LESSONS.md"""
 import argparse
+import os
 import re
 from pathlib import Path
 
 
 def workspace_root() -> Path:
+    raw = os.environ.get("OPENCLAW_WORKSPACE")
+    if raw:
+        return Path(raw).expanduser()
     return Path(__file__).resolve().parent.parent
 
 
@@ -35,14 +39,18 @@ def main() -> int:
 
     # Extract entries
     entries = []
+    seen = set()
     for line in lines:
         parsed = parse_entry(line)
         if parsed:
+            if parsed in seen:
+                continue
+            seen.add(parsed)
             entries.append(parsed)
 
-    # Sort by date desc, severity asc (critical first)
+    # Sort by date desc, then severity priority with critical first.
     severity_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
-    entries.sort(key=lambda e: (e[0], severity_order.get(e[1], 4)), reverse=True)
+    entries.sort(key=lambda e: (e[0], -severity_order.get(e[1], 4)), reverse=True)
 
     # Limit
     entries = entries[:args.limit] if args.limit > 0 else entries

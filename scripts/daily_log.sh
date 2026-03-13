@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WORKSPACE=$(cd "$SCRIPT_DIR/.." && pwd)
+WORKSPACE=${OPENCLAW_WORKSPACE:-$(cd "$SCRIPT_DIR/.." && pwd)}
 MEMORY_DIR="$WORKSPACE/memory"
 DATE_UTC=$(date -u +%F)
 NOW_UTC=$(date -u +%FT%TZ)
