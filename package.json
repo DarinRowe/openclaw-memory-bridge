@@ -1,9 +1,12 @@
 {
   "name": "openclaw-memory-bridge",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Bridges file-based memory (SESSION-STATE, LESSONS) into agent context",
   "main": "index.ts",
   "type": "module",
+  "scripts": {
+    "smoke": "node scripts/smoke_test_plugin.mjs"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/DarinRowe/openclaw-memory-bridge"

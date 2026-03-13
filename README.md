@@ -1,6 +1,6 @@
 # openclaw-memory-bridge
 
-Bridges file-based memory into OpenClaw agent context. No config needed — install and go.
+Bridges file-based memory into OpenClaw agent context. Install and go, with conservative defaults to avoid prompt bloat.
 
 ## How It Works
 
@@ -9,9 +9,10 @@ Bridges file-based memory into OpenClaw agent context. No config needed — inst
         │
         ▼
 ┌───────────────────┐     ┌──────────────────────────┐
-│ before_prompt_build│────▶│ Read SESSION-STATE.md    │
-│                   │     │ Read LESSONS.md (high/crit)│
-│                   │     │ Inject into agent context  │
+│ before_prompt_build│────▶│ Read SESSION-STATE.md      │
+│                   │     │ Read LESSONS.md (high/crit) │
+│                   │     │ Truncate to safe limits     │
+│                   │     │ Inject into agent context   │
 └───────────────────┘     └──────────────────────────┘
         │
         ▼
@@ -27,8 +28,8 @@ Bridges file-based memory into OpenClaw agent context. No config needed — inst
         │
         ▼
 ┌───────────────────┐     ┌──────────────────────────┐
-│   command:new     │────▶│ Create today's daily log │
-│                   │     │ memory/YYYY-MM-DD.md     │
+│   command:new     │────▶│ Ensure today's daily log  │
+│                   │     │ memory/YYYY-MM-DD.md      │
 └───────────────────┘     └──────────────────────────┘
 
   Gateway starts / every day 00:15 UTC
@@ -86,6 +87,7 @@ All features are **on** by default. Turn off what you don't need:
     "entries": {
       "memory-bridge": {
         "config": {
+          "workspace": "~/.openclaw/workspace",
           "injectSessionState": true,
           "injectHighRiskLessons": true,
           "autoDailyLog": true,
@@ -99,6 +101,14 @@ All features are **on** by default. Turn off what you don't need:
 }
 ```
 
+Notes:
+
+- `workspace` overrides the OpenClaw workspace path for this plugin only.
+- `maxSessionStateChars` caps the injected `SESSION-STATE.md` block per turn.
+- `maxHighRiskLessons` limits how many `high`/`critical` lessons are injected.
+- `maxLessonChars` caps the total injected lessons block per turn.
+- If a block exceeds its limit, the plugin truncates it and appends `[truncated]`.
+
 ## Bundled Scripts
 
 Use standalone or let the plugin call them automatically.
@@ -111,6 +121,7 @@ python3 scripts/add_lesson.py --category devops --severity high "always backup b
 python3 scripts/search_lessons.py "backup"
 
 # Sort/dedupe lessons
+# Date desc, severity critical first
 python3 scripts/render_lessons_md.py
 
 # Update session state
@@ -121,9 +132,12 @@ bash scripts/daily_log.sh
 
 # Run cleanup manually
 python3 scripts/memory_janitor.py --dry-run
+
+# Run the plugin smoke test
+npm run smoke
 ```
 
-Scripts use `$OPENCLAW_WORKSPACE` (default: `~/.openclaw/workspace`).
+Scripts use `$OPENCLAW_WORKSPACE` when set. Otherwise they fall back to the plugin's local workspace root, which is useful for local development and smoke tests.
 
 ## License
 
