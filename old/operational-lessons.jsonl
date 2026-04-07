@@ -1,0 +1,4 @@
+{"date": "2026-03-01", "category": "browserwing", "lesson": "中文字体缺失会导致截图中文不可见；安装 fonts-noto-cjk / fonts-wqy-* 后需重启 BrowserWing", "severity": "high"}
+{"date": "2026-03-01", "category": "skill", "lesson": "message 工具发送本地图片必须位于允许目录（workspace 内）；/tmp 不可直接发送", "severity": "high"}
+{"date": "2026-03-01", "category": "x", "lesson": "抓取 x.com 动态内容需等待 5-8 秒 React hydration；必要时截图验证", "severity": "medium"}
+{"date": "2026-03-01", "category": "memory", "lesson": "Added add_lesson.py helper script", "severity": "low"}
